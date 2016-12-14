@@ -18,6 +18,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public class CycleRebootMain extends Activity implements View.OnClickListener{
@@ -25,15 +26,13 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     static final String IS_CYCLING = "is_cycling";
     static final String ACTION_SIM_STATE_CHANGED = "android.intent.action.SIM_STATE_CHANGED";
     private static final String TAG = "CycleRebootMain";
-    private static final int SIM_STATE_NOT_READY = 6;
-    private static final int SIM_STATE_PERM_DISABLED = 7;
-    private static final int SIM_STATE_CARD_IO_ERROR = 8;
     static final int MSG_REBOOT_START = 1;
     static final int MSG_GET_SIM_STATE = 2;
     private static final String TOTAL_TIMES = "total_times";
     private static final String REMAIN_TIMES = "remain_times";
     private static final String CYCLED_TIMES = "cycled_times";
     private static final String SIM_FAILED_TIMES = "sim_faild_times";
+    private static final String SIM_STATE = "sim_state";
     private static final String ERROR_REASON = "error_reason";
     private static final long CHECK_TIME_INTERVAL = (15*1000);  //check interval of sim state * ms
     private static final long CHECK_TIME_OUT = (5*60*1000);  //check interval of sim state * ms
@@ -58,7 +57,7 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     private boolean mIsCycling = false;
     private TelephonyManager mTelephonyManager;
     private ArrayMap<Integer, Integer> multiSimStates;
-    private PowerManager.WakeLock wakeLock;
+
 
     private boolean mIsTimeOut = false;
     public Handler mHandler = new Handler(){
@@ -99,38 +98,6 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
                             }
                             writeTimesToPreferences();
                             updateTimesString();
-                            /*
-                            Intent rebootIntent = new Intent();
-                            String reboot_action = "";
-                            try {
-                                Field action_request_shutdown = rebootIntent.getClass().
-                                        getDeclaredField("ACTION_REQUEST_SHUTDOWN");
-                                action_request_shutdown.setAccessible(true);
-                                reboot_action = (String)action_request_shutdown.get(rebootIntent);
-                                MyLogs.MyLogD(TAG, "reboot_action >>>>>>>>>>>>>>> get successfully");
-                            }catch (Exception e){
-                                reboot_action = "";
-                                MyLogs.MyLogD(TAG, "reboot_action >>>>>>>>>>>>>>> get failed");
-                                MyLogs.MyLogD(TAG, "Exception >>>>>>>>>>>>>>> : " + e.toString());
-                            }
-                            String extra_data_key_confirm = "";
-                            try {
-                                Field extra_key_confirm = rebootIntent.getClass().
-                                        getDeclaredField("EXTRA_KEY_CONFIRM");
-                                extra_key_confirm.setAccessible(true);
-                                extra_data_key_confirm = (String)extra_key_confirm.get(rebootIntent);
-                                MyLogs.MyLogD(TAG, "extra_data_key_confirm >>>>>>>>>>>>>>> get successfully");
-                            }catch (Exception e){
-                                extra_data_key_confirm = "";
-                                MyLogs.MyLogD(TAG, "extra_data_key_confirm >>>>>>>>>>>>>>> get failed");
-                                MyLogs.MyLogD(TAG, "Exception >>>>>>>>>>>>>>> : " + e.toString());
-                            }
-
-                            rebootIntent.setAction(reboot_action);
-                            rebootIntent.putExtra(extra_data_key_confirm, false);
-                            rebootIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(rebootIntent);
-                            */
                             mPowerManager.reboot("test");
                         } else {
                             /**SimStatusReceiver may be send this message
@@ -156,25 +123,7 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
                         sb.append(" state : ");
                         sb.append(conversionStateToString(multiSimStates.get(i)));
                         sb.append(" operator name : ");
-                        String opreratorName = "unknown";
-                        try {
-                            if(mTelephonyManager !=null) {
-                                Method getNetworkOperatorName = mTelephonyManager.getClass().
-                                        getDeclaredMethod("getNetworkOperatorName",
-                                                new Class[]{int.class});
-                                getNetworkOperatorName.setAccessible(true);
-                                opreratorName = (String) getNetworkOperatorName.invoke(mTelephonyManager, i);
-                                MyLogs.MyLogD(TAG, "opreratorName >>>>>>>>>>>>>>> get successfully");
-                            }else{
-                                MyLogs.MyLogD(TAG, "opreratorName >>>>>>>>>>>>>>> get failed");
-                                opreratorName = "unknown";
-                            }
-                        }catch (Exception e){
-                            MyLogs.MyLogD(TAG, "opreratorName >>>>>>>>>>>>>>> get failed");
-                            opreratorName = "unknown";
-                        }
-                        sb.append(opreratorName);
-                        //sb.append(mTelephonyManager.getNetworkOperatorName(i));
+                        sb.append(mTelephonyManager.getNetworkOperatorName(i));
                         sb.append("\n");
                     }
                     updateSimStateUI(sb.toString());
@@ -219,13 +168,13 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
             case TelephonyManager.SIM_STATE_READY:
                 result = mResources.getString(R.string.sim_state_string_ready);
                 break;
-            case SIM_STATE_NOT_READY:
+            case TelephonyManager.SIM_STATE_NOT_READY:
                 result = mResources.getString(R.string.sim_state_string_not_ready);
                 break;
-            case SIM_STATE_PERM_DISABLED:
+            case TelephonyManager.SIM_STATE_PERM_DISABLED:
                 result = mResources.getString(R.string.sim_state_string_perm_disabled);
                 break;
-            case SIM_STATE_CARD_IO_ERROR:
+            case TelephonyManager.SIM_STATE_CARD_IO_ERROR:
                 result = mResources.getString(R.string.sim_state_string_card_io_error);
                 break;
             default:
@@ -240,50 +189,16 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
         mSimStateTextView.setText(stateString);
     }
 
+
     private boolean simAndNetworkValide(){
-        int simCounts = 1;
-        try{
-            if(mTelephonyManager !=null){
-                Method methodSend=  mTelephonyManager.getClass().getDeclaredMethod("getPhoneCount");
-                methodSend.setAccessible(true);
-                simCounts = (Integer)methodSend.invoke(mTelephonyManager);
-                MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> get successfully");
-            } else {
-                MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> get failed");
-                simCounts = 1;
-            }
-            MyLogs.MyLogD(TAG, "simCounts = >>>>>>>>>>>>>>>"+simCounts);
-        }catch (Exception e){
-            MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> get failed");
-            MyLogs.MyLogD(TAG, "Exception = >>>>>>>>>>>>>>>"+e.toString());
-            simCounts = 1;
-        }
-        //int simCounts = mTelephonyManager.getPhoneCount();
+        int simCounts = mTelephonyManager.getPhoneCount();
         MyLogs.MyLogD(TAG, "simCounts = "+simCounts);
         if(simCounts <= 0 ){
             return false;
         }
         ArrayMap<Integer, Boolean> multiSimIsOK = new ArrayMap<Integer, Boolean>();
         for(int i = 0 ; i < simCounts; i++){
-            int newState = TelephonyManager.SIM_STATE_UNKNOWN;
-            try {
-                if(mTelephonyManager !=null){
-                    Method getSimState = mTelephonyManager.getClass().
-                            getDeclaredMethod("getSimState",
-                                    new Class[] {int.class});
-                    getSimState.setAccessible(true);
-                    newState = (Integer)getSimState.invoke(mTelephonyManager, i);
-                    MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> get successfully");
-                }else{
-                    MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> get failed");
-                    newState = TelephonyManager.SIM_STATE_UNKNOWN;
-                }
-            }catch (Exception e){
-                MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> get failed");
-                MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> Exception :" + e.toString());
-                newState = TelephonyManager.SIM_STATE_UNKNOWN;
-            }
-            //int newState = mTelephonyManager.getSimState(i);
+            int newState = mTelephonyManager.getSimState(i);
             MyLogs.MyLogD(TAG, "sim "+ i + " state = "+newState);
             if(multiSimStates.get(i) == null){
                 multiSimStates.put(i, newState);
@@ -361,8 +276,7 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cycle_reboot_main);
         MyLogs.MyLogD(TAG, "onCreate");
-        mApplication = (CycleRebootApplication)getApplication(); //new CycleRebootApplication();
-
+        mApplication = (CycleRebootApplication)getApplication(); //new CycleRebootApplication(); //
         mResources = getResources();
         multiSimStates = new ArrayMap<Integer, Integer>();
         mCycleTimesEdit = (EditText)findViewById(R.id.time_edit);
@@ -391,11 +305,6 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
         mReportButton.setOnClickListener(this);
 
         mPowerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-
-        wakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE,
-                "<<CycleReboot KeepScreenOn>>");
-        wakeLock.acquire();
-        MyLogs.MyLogD(TAG, "get wake lock!");
         mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_SIM_STATE_CHANGED);
@@ -413,15 +322,6 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     @Override
     protected void onResume() {
         MyLogs.MyLogD(TAG, "onResume");
-        if(wakeLock != null){
-            wakeLock.acquire();
-            MyLogs.MyLogD(TAG, "get wake lock!");
-        }else{
-            wakeLock = mPowerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE,
-                    "<<CycleReboot KeepScreenOn>>");
-            wakeLock.acquire();
-            MyLogs.MyLogD(TAG, "get wake lock!");
-        }
         super.onResume();
     }
 
@@ -434,11 +334,6 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     @Override
     protected void onPause() {
         MyLogs.MyLogD(TAG, "onPause");
-        if(wakeLock != null){
-            wakeLock.release();
-            wakeLock = null;
-            MyLogs.MyLogD(TAG, "release wake lock!");
-        }
         super.onPause();
     }
 

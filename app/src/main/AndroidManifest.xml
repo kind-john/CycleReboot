@@ -3,12 +3,10 @@
           android:sharedUserId="android.uid.system"
           package="com.ckt.cyclereboot">
 
-          <!--android:sharedUserId="android.uid.system"-->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REBOOT"/>
     <uses-permission android:name="android.permission.DEVICE_POWER"/>
-    <!--
-    -->
+
     <application
         android:name=".CycleRebootApplication"
         android:allowBackup="false"

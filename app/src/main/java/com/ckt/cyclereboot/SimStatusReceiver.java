@@ -8,8 +8,6 @@ import android.os.Message;
 import android.telephony.TelephonyManager;
 import android.util.ArrayMap;
 
-import java.lang.reflect.Method;
-
 public class SimStatusReceiver extends BroadcastReceiver {
     private static final String TAG = "SimStatusReceiver";
     private final Context mContext;
@@ -25,49 +23,14 @@ public class SimStatusReceiver extends BroadcastReceiver {
     }
 
     private boolean simAndNetworkValide(){
-        int simCounts = 1;
-        try {
-            if(mTelephonyManager !=null) {
-                Method getPhoneCount = mTelephonyManager.getClass().
-                        getDeclaredMethod("getPhoneCount");
-                getPhoneCount.setAccessible(true);
-                simCounts = (Integer) getPhoneCount.invoke(mTelephonyManager);
-                MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> get successfully");
-            }else{
-                MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> get failed");
-                simCounts = 1;
-            }
-        }catch (Exception e){
-            MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> get failed");
-            MyLogs.MyLogD(TAG, "simCounts >>>>>>>>>>>>>>> Exception: "+e.toString());
-            simCounts = 1;
-        }
-        //int simCounts = mTelephonyManager.getPhoneCount();
+        int simCounts = mTelephonyManager.getPhoneCount();
         MyLogs.MyLogD(TAG, "simCounts = "+simCounts);
         if(simCounts <= 0 ){
             return false;
         }
         ArrayMap<Integer, Boolean> multiSimIsOK = new ArrayMap<Integer, Boolean>();
         for(int i = 0 ; i < simCounts; i++){
-            int newState = TelephonyManager.SIM_STATE_UNKNOWN;
-            try {
-                if(mTelephonyManager !=null){
-                    Method getSimState = mTelephonyManager.getClass().
-                            getDeclaredMethod("getSimState",
-                                    new Class[] {int.class});
-                    getSimState.setAccessible(true);
-                    newState = (Integer)getSimState.invoke(mTelephonyManager, i);
-                    MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> get successfully");
-                }else{
-                    MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> get failed");
-                    newState = TelephonyManager.SIM_STATE_UNKNOWN;
-                }
-            }catch (Exception e){
-                MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> get failed");
-                MyLogs.MyLogD(TAG, "newState >>>>>>>>>>>>>>> Exception: "+e.toString());
-                newState = TelephonyManager.SIM_STATE_UNKNOWN;
-            }
-            //int newState = mTelephonyManager.getSimState(i);
+            int newState = mTelephonyManager.getSimState(i);
             MyLogs.MyLogD(TAG, "sim "+ i + " state = "+newState);
             if(multiSimStates.get(i) == null){
                 multiSimStates.put(i, newState);
