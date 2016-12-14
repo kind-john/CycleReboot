@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">CycleReboot</string>
+    <string name="cycled_text">Cycled : </string>
+    <string name="remain_text">Remain : </string>
+    <string name="total_text">Total : </string>
+    <string name="failed_text">Failed : </string>
+    <string name="cycle_times_text">Reboot times : </string>
+    <string name="start_button_text">Start</string>
+    <string name="ok_button_text">OK</string>
+    <string name="report_button_text">Report</string>
+    <string name="number_catch_error">Please enter a valid number!</string>
+    <string name="total_times_error">Please enter a valid times!</string>
+    <string name="reset_total_times_title">Reset times</string>
+    <string name="reset_total_times_message">Reset times?</string>
+    <string name="confirm_button">OK</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="start_button_title">Restart</string>
+    <string name="start_button_message">Are you sure you want to recycle?</string>
+    <string name="iscycling">cycling!!!</string>
+    <string name="sim_state_string_unknown">UNKNOWN</string>
+    <string name="sim_state_string_absent">ABSENT</string>
+    <string name="sim_state_string_pin_required">PIN_REQUIRED</string>
+    <string name="sim_state_string_puk_required">PUK_REQUIRED</string>
+    <string name="sim_state_string_network_locked">NETWORK_LOCKED</string>
+    <string name="sim_state_string_ready">READY</string>
+    <string name="sim_state_string_not_ready">NOT_READY</string>
+    <string name="sim_state_string_perm_disabled">PERM_DISABLED</string>
+    <string name="sim_state_string_card_io_error">CARD_IO_ERROR</string>
+    <string name="sim_state_string_scanning">scanning sim state...</string>
+    <string name="tips_string_cycling">cycling, can not reset times!</string>
+</resources>
