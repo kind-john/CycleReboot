@@ -59,7 +59,8 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     private TelephonyManager mTelephonyManager;
     private ArrayMap<Integer, Integer> multiSimStates;
     private PowerManager.WakeLock wakeLock;
-    private final static boolean IS_NEED_CHECK_SIM_STATUS = false; //control wether check sim status
+    private final static boolean IS_NEED_CHECK_SIM_STATUS = true; //control wether check sim status
+    private final static boolean IS_NEED_REBOOT_WHEN_TIMEOUT = false; //wether reboot when sim check error
     private boolean mIsTimeOut = false;
     public Handler mHandler = new Handler(){
         @Override
@@ -100,39 +101,9 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
                             }
                             writeTimesToPreferences();
                             updateTimesString();
-                            /*
-                            Intent rebootIntent = new Intent();
-                            String reboot_action = "";
-                            try {
-                                Field action_request_shutdown = rebootIntent.getClass().
-                                        getDeclaredField("ACTION_REQUEST_SHUTDOWN");
-                                action_request_shutdown.setAccessible(true);
-                                reboot_action = (String)action_request_shutdown.get(rebootIntent);
-                                MyLogs.MyLogD(TAG, "reboot_action >>>>>>>>>>>>>>> get successfully");
-                            }catch (Exception e){
-                                reboot_action = "";
-                                MyLogs.MyLogD(TAG, "reboot_action >>>>>>>>>>>>>>> get failed");
-                                MyLogs.MyLogD(TAG, "Exception >>>>>>>>>>>>>>> : " + e.toString());
+                            if (!mIsTimeOut || (mIsTimeOut && IS_NEED_REBOOT_WHEN_TIMEOUT)) {
+                                mPowerManager.reboot("test");
                             }
-                            String extra_data_key_confirm = "";
-                            try {
-                                Field extra_key_confirm = rebootIntent.getClass().
-                                        getDeclaredField("EXTRA_KEY_CONFIRM");
-                                extra_key_confirm.setAccessible(true);
-                                extra_data_key_confirm = (String)extra_key_confirm.get(rebootIntent);
-                                MyLogs.MyLogD(TAG, "extra_data_key_confirm >>>>>>>>>>>>>>> get successfully");
-                            }catch (Exception e){
-                                extra_data_key_confirm = "";
-                                MyLogs.MyLogD(TAG, "extra_data_key_confirm >>>>>>>>>>>>>>> get failed");
-                                MyLogs.MyLogD(TAG, "Exception >>>>>>>>>>>>>>> : " + e.toString());
-                            }
-
-                            rebootIntent.setAction(reboot_action);
-                            rebootIntent.putExtra(extra_data_key_confirm, false);
-                            rebootIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(rebootIntent);
-                            */
-                            mPowerManager.reboot("test");
                         } else {
                             /**SimStatusReceiver may be send this message
                             *if user don't click start button,
