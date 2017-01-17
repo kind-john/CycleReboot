@@ -8,8 +8,8 @@ android {
         applicationId "com.ckt.cyclereboot"
         minSdkVersion 19
         targetSdkVersion 23
-        versionCode 2
-        versionName "2.0"
+        versionCode 1
+        versionName "only reboot V1.0"
     }
     buildTypes {
         release {

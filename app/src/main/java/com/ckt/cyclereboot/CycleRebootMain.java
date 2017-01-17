@@ -59,7 +59,7 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     private TelephonyManager mTelephonyManager;
     private ArrayMap<Integer, Integer> multiSimStates;
     private PowerManager.WakeLock wakeLock;
-
+    private final static boolean IS_NEED_CHECK_SIM_STATUS = false; //control wether check sim status
     private boolean mIsTimeOut = false;
     public Handler mHandler = new Handler(){
         @Override
@@ -79,6 +79,7 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
                                 mStartButton.setClickable(true);
                             }
                             if(mIsTimeOut){
+                                //time out need write failed reason to sp
                                 mFailedScanSimTimes++;
                                 ArrayMap<String, Object> map = new ArrayMap<String, Object>();
 
@@ -146,8 +147,30 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
                     * util CHECK_TIME_OUT
                     * */
                     MyLogs.MyLogD(TAG, "handleMessage  MSG_GET_SIM_STATE");
-                    simAndNetworkValide();
-                   
+                    if(simAndNetworkValide()){
+                        //send reboot msg
+                        mIsTimeOut = false;
+                        MyLogs.MyLogE(TAG, "sim state ok send reboot msg !!!");
+                        removeMessages(MSG_GET_SIM_STATE);
+                        removeMessages(MSG_REBOOT_START);
+                        sendEmptyMessage(MSG_REBOOT_START);
+                    }else{
+                        //recheck sim status ?
+                        if(passedTime < CHECK_TIME_OUT){
+                            passedTime += CHECK_TIME_INTERVAL;
+                            mIsTimeOut = false;
+                            sendEmptyMessageDelayed(MSG_GET_SIM_STATE, CHECK_TIME_INTERVAL);
+                        } else {
+                            //time out?
+                            mIsTimeOut = true;
+                            MyLogs.MyLogE(TAG, "check sim state time out !!!");
+                            removeMessages(MSG_GET_SIM_STATE);
+                            removeMessages(MSG_REBOOT_START);
+                            sendEmptyMessage(MSG_REBOOT_START);
+                        }
+                    }
+
+                    //update UI
                     StringBuilder sb = new StringBuilder();
                     MyLogs.MyLogD(TAG,"multiSimStates size = "+ multiSimStates.size());
                     for(int i = 0; i < multiSimStates.size(); i++){
@@ -178,19 +201,6 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
                         sb.append("\n");
                     }
                     updateSimStateUI(sb.toString());
-
-                    if(passedTime < CHECK_TIME_OUT){
-                        passedTime += CHECK_TIME_INTERVAL;
-                        mIsTimeOut = false;
-                        sendEmptyMessageDelayed(MSG_GET_SIM_STATE, CHECK_TIME_INTERVAL);
-                    } else {
-                        //time out?
-                        mIsTimeOut = true;
-                        MyLogs.MyLogE(TAG, "check sim state time out !!!");
-                        removeMessages(MSG_GET_SIM_STATE);
-                        removeMessages(MSG_REBOOT_START);
-                        sendEmptyMessage(MSG_REBOOT_START);
-                    }
                     break;
                 default:
                     break;
@@ -242,6 +252,10 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
 
     private boolean simAndNetworkValide(){
         int simCounts = 1;
+        if(!IS_NEED_CHECK_SIM_STATUS && mIsCycling){
+            MyLogs.MyLogD(TAG, "don't need check sim status!!!");
+            return true;
+        }
         try{
             if(mTelephonyManager !=null){
                 Method methodSend=  mTelephonyManager.getClass().getDeclaredMethod("getPhoneCount");
@@ -397,16 +411,20 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
         wakeLock.acquire();
         MyLogs.MyLogD(TAG, "get wake lock!");
         mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_SIM_STATE_CHANGED);
-        mSimStatusReceiver = new SimStatusReceiver(getApplicationContext(), mHandler);
-        registerReceiver(mSimStatusReceiver, filter);
         //RebootCompletedReceiver start activity may be delivery this param.
         mIsCycling = mApplication.getBooleanSharedPreferences(IS_CYCLING);
 
         //start scan sim state
         Message msg = new Message();
-        msg.what = MSG_GET_SIM_STATE;
+        if(!IS_NEED_CHECK_SIM_STATUS && mIsCycling){
+            msg.what = MSG_REBOOT_START;
+        }else{
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(ACTION_SIM_STATE_CHANGED);
+            mSimStatusReceiver = new SimStatusReceiver(getApplicationContext(), mHandler);
+            registerReceiver(mSimStatusReceiver, filter);
+            msg.what = MSG_GET_SIM_STATE;
+        }
         mHandler.sendMessage(msg);
     }
 
@@ -445,7 +463,9 @@ public class CycleRebootMain extends Activity implements View.OnClickListener{
     @Override
     protected void onDestroy() {
         MyLogs.MyLogD(TAG, "onDestroy");
-        unregisterReceiver(mSimStatusReceiver);
+        if(mSimStatusReceiver != null){
+            unregisterReceiver(mSimStatusReceiver);
+        }
         super.onDestroy();
     }
 
