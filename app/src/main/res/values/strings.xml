@@ -28,4 +28,6 @@
     <string name="sim_state_string_card_io_error">CARD_IO_ERROR</string>
     <string name="sim_state_string_scanning">scanning sim state...</string>
     <string name="tips_string_cycling">cycling, can not reset times!</string>
+    <string name="reboot_count_down_text">reboot after  %1$d seconds</string>
+    <string name="ischecksim">Check SIM state</string>
 </resources>
